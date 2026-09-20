@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MUNIN · Heimdall</title><style>
+:root{
+  --ink:#14110F; --ink-2:#1C1815; --rule:#3A322B;
+  --bone:#EDE4D3; --bone-dim:#A99B86; --gold:#C9A227; --ash:#6E6257;
+  --ember:#B4472F; --moss:#6E8B5E;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--ink);color:var(--bone);
+  font:16px/1.6 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  -webkit-font-smoothing:antialiased}
+.num,td.n,th.n{font-family:"SF Mono",Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums;font-size:.92em;letter-spacing:-.01em}
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px 96px}
+header.top{border-bottom:1px solid var(--rule);margin-bottom:0;padding:34px 0 26px}
+.eyebrow{font:600 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--gold)}
+h1{font-size:40px;line-height:1.12;margin:16px 0 8px;font-weight:600;letter-spacing:-.015em}
+h2{font-size:25px;margin:0 0 6px;font-weight:600;letter-spacing:-.01em}
+.sub{color:var(--bone-dim);font-size:15px;margin:0}
+.lede{font-size:18px;line-height:1.62;color:var(--bone);max-width:66ch;margin:18px 0 0}
+section{padding:40px 0;border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+table{width:100%;border-collapse:collapse;margin-top:18px;font-size:14.5px}
+th{text-align:left;font:600 10.5px/1 ui-sans-serif,system-ui,sans-serif;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ash);
+  padding:0 12px 10px;border-bottom:1px solid var(--rule)}
+th.n,td.n{text-align:right}
+td{padding:11px 12px;border-bottom:1px solid rgba(58,50,43,.55);vertical-align:top}
+tr:hover td{background:var(--ink-2)}
+.tag{display:inline-block;font:600 10px/1 ui-sans-serif,system-ui,sans-serif;
+  letter-spacing:.12em;text-transform:uppercase;padding:5px 8px;border-radius:2px;
+  border:1px solid currentColor}
+.t-open{color:var(--gold)} .t-refuse{color:var(--ember)} .t-ok{color:var(--moss)}
+.t-hold{color:var(--bone-dim)}
+.unres{color:var(--gold);font-style:italic}
+.unres::before{content:"◇ ";font-style:normal}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);
+  border:1px solid var(--rule);margin-top:26px}
+.stat{background:var(--ink);padding:22px 20px}
+.stat .k{font:600 10.5px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ash)}
+.stat .v{font-family:"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;
+  font-size:33px;margin-top:12px;letter-spacing:-.02em}
+.stat .v.gold{color:var(--gold)} .stat .n2{color:var(--bone-dim);font-size:13px;margin-top:8px}
+nav.bar{display:flex;gap:26px;flex-wrap:wrap;padding:16px 0;border-bottom:1px solid var(--rule);
+  font:600 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+nav.bar a{color:var(--bone-dim);text-decoration:none;padding-bottom:3px}
+nav.bar a:hover{color:var(--bone)} nav.bar a.on{color:var(--gold);border-bottom:1px solid var(--gold)}
+.sim{display:inline-block;border:1px solid var(--ember);color:var(--ember);
+  font:600 10px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.16em;
+  text-transform:uppercase;padding:6px 9px;border-radius:2px}
+footer{padding:34px 0;color:var(--ash);font-size:12.5px;line-height:1.7}
+.rpt{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:22px}
+.card{border:1px solid var(--rule);padding:22px}
+.card h3{margin:0 0 4px;font-size:17px}
+.card .who{font:600 10.5px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gold)}
+.card p{color:var(--bone-dim);font-size:14px;margin:10px 0 0}
+.quote{border-left:2px solid var(--rule);padding:4px 0 4px 18px;color:var(--bone-dim);
+  font-size:15px;margin:0 0 12px}
+.why{font-size:14px;color:var(--bone);margin:8px 0 0}
+@media(max-width:820px){.stats{grid-template-columns:1fr}.rpt{grid-template-columns:1fr}
+  .wrap{padding:0 18px 64px}h1{font-size:30px}}
+</style></head><body><div class="wrap">
+<header class="top"><div style="display:flex;align-items:center;gap:14px"><svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+<circle cx="17" cy="17" r="16" stroke="#C9A227" stroke-width="1"/>
+<path d="M4 17c4.2-5.4 8.6-8.1 13-8.1S25.8 11.6 30 17c-4.2 5.4-8.6 8.1-13 8.1S8.2 22.4 4 17z"
+ stroke="#C9A227" stroke-width="1"/><circle cx="17" cy="17" r="3.6" fill="#C9A227"/>
+<path d="M17 1v32M1 17h32" stroke="#C9A227" stroke-width=".4" opacity=".35"/></svg>
+<div><div class="eyebrow">Munin · At the gate</div>
+<div class="sub" style="margin-top:4px">Electricians Local XXX &nbsp;·&nbsp; <span class="sim">Simulated</span></div></div></div>
+<h1>Heimdall</h1><p class="lede">The gatekeeper who sees and hears everything coming across. Nothing enters Munin's memory without passing him, and nothing is dropped in silence.</p></header>
+<nav class="bar"><a href="index.html" class="">Bifrost</a><a href="blind_eye.html" class="">The Blind Eye</a><a href="roster.html" class="">Gungnir</a><a href="gate.html" class="on">Heimdall</a><a href="realms.html" class="">Realms</a></nav>
+<section>
+<div class="stats">
+<div class="stat"><div class="k">Reports through the gate</div><div class="v">6</div></div>
+<div class="stat"><div class="k">Written to the record</div><div class="v">2</div></div>
+<div class="stat"><div class="k">Held or refused, with a reason</div>
+<div class="v gold">4</div><div class="n2">every one of them logged</div></div>
+</div>
+<p class="lede" style="margin-top:32px">A business agent does not fill in a form. He says a
+sentence from the truck. Wins and losses both: the local learns more from its losses, but it
+studies both. Heimdall takes the sentence and does one of three things: writes the row, holds
+it and names the one thing missing, or refuses it and says why. A name on either side of the
+result is never a reason to refuse. A refusal is a decision, and every decision is kept.</p>
+<p class="lede">Reading the sentence is the only part a model touches. The judgement is rules
+and the arithmetic is never a model's, so the same sentence always produces the same verdict.</p>
+<div class="rpt" style="margin-top:34px"><div class='card'><span class='tag t-ok'>Accepted</span><p class='quote' style='margin-top:16px'>&ldquo;Kestrel Power bid the Wexford Medical Office Building out in Montgomery, we were at 1,240,000, about 6,100 man hours. Lost it. Ridgeway Services came in at 1,198,000.&rdquo;</p><p class='why'>complete, and the contractor is on the signatory list</p><p class='sub' style='margin-top:10px'>Wrote J-5196 to the record as a loss.</p><p class='sub' style='margin-top:12px;font-size:12.5px'>decided by heimdall/rules</p></div><div class='card'><span class='tag t-ok'>Accepted</span><p class='quote' style='margin-top:16px'>&ldquo;Halloran Systems took the Dunmore Transit Substation in Delaware, our number was 880,000, roughly 4,400 hours. We got it.&rdquo;</p><p class='why'>complete, and the contractor is on the signatory list</p><p class='sub' style='margin-top:10px'>Wrote J-5197 to the record as a win.</p><p class='sub' style='margin-top:12px;font-size:12.5px'>decided by heimdall/rules</p></div><div class='card'><span class='tag t-hold'>Held</span><p class='quote' style='margin-top:16px'>&ldquo;Ironvale bid the Colebrook Cold Storage Facility in Bucks, 2,100,000, call it 9,800 hours. We lost that one.&rdquo;</p><p class='why'>a loss with no winning number is a rumour, not a record. Ask who got it and for how much.</p><p class='sub' style='margin-top:12px;font-size:12.5px'>decided by heimdall/rules</p></div><div class='card'><span class='tag t-hold'>Held</span><p class='quote' style='margin-top:16px'>&ldquo;Aspen Field Services put in 640,000 on the Ashby Warehouse Fit-Out over in Chester, 3,200 hours, and they got it.&rdquo;</p><p class='why'>Aspen Field Services got it. Which of our signatories bid it? The result is recorded either way; it needs a name on our side.</p><p class='sub' style='margin-top:12px;font-size:12.5px'>decided by heimdall/rules</p></div><div class='card'><span class='tag t-refuse'>Refused</span><p class='quote' style='margin-top:16px'>&ldquo;Kestrel Power bid the Wexford Medical Office Building in Montgomery again, 1,240,000, 6,100 hours, lost to Ridgeway at 1,198,000.&rdquo;</p><p class='why'>already on file as J-5196. A result counted twice is a score that lies.</p><p class='sub' style='margin-top:12px;font-size:12.5px'>decided by heimdall/rules</p></div><div class='card'><span class='tag t-refuse'>Refused</span><p class='quote' style='margin-top:16px'>&ldquo;Marden Electric had the Fenwick Laboratory Renovation in Philadelphia at 1,450,000, 7,000 hours. Lost it, the other outfit came in at 1,512,000.&rdquo;</p><p class='why'>the reported winning bid is higher than ours on a job we lost. One of the two numbers is wrong.</p><p class='sub' style='margin-top:12px;font-size:12.5px'>decided by heimdall/rules</p></div></div></section>
+<footer>Munin is Odin's raven, the one that remembers. It carries back what the hall
+never wrote down.<br>Simulated data throughout. No real local, no real contractor,
+no real job. Generated September 20, 2026 at 3:12 PM.</footer>
+</div></body></html>
