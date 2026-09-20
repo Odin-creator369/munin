@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "python3 run.py || true",
-  "outputDirectory": "reports"
+  "buildCommand": "python3 run.py || true; python3 pack.py || true",
+  "outputDirectory": "reports",
+  "headers": [
+    { "source": "/MUNIN.zip", "headers": [ { "key": "Access-Control-Allow-Origin", "value": "*" } ] }
+  ]
 }
