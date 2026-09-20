@@ -240,7 +240,11 @@ def p_gate(conn):
     for r in rows:
         cls = {"accepted":"t-ok","held":"t-hold","refused":"t-refuse"}[r["verdict"]]
         word = {"accepted":"Accepted","held":"Held","refused":"Refused"}[r["verdict"]]
-        wrote = f"<p class='sub' style='margin-top:10px'>Wrote {esc(r['job_id'])} to the loss record.</p>" if r["job_id"] else ""
+        wrote = ""
+        if r["job_id"]:
+            oc = conn.execute("SELECT outcome FROM bids WHERE job_id=?", (r["job_id"],)).fetchone()
+            kind = {"won": "a win", "lost": "a loss"}.get(oc["outcome"] if oc else None, "a result")
+            wrote = f"<p class='sub' style='margin-top:10px'>Wrote {esc(r['job_id'])} to the record as {kind}.</p>"
         cards.append(
             f"<div class='card'><span class='tag {cls}'>{word}</span>"
             f"<p class='quote' style='margin-top:16px'>&ldquo;{esc(r['raw_report'])}&rdquo;</p>"
