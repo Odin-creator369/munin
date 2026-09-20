@@ -1,0 +1,7 @@
+munin.db
+munin.db-*
+munin_key.txt
+__pycache__/
+shots/
+*.pyc
+.DS_Store
