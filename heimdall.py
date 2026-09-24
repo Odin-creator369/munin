@@ -101,8 +101,22 @@ def _offline_extract(text):
     # every company-shaped name in the sentence, in the order it was said.
     # one of ours is a signatory. anyone else is the other side of the result.
     companies = [c.strip() for c in _COMPANY.findall(text)]
+
+    # IN THE ORDER IT WAS SAID, which is what this comment always claimed and
+    # what the code did not do. Until Sept 22, 2026 the signatories were taken
+    # in the order they sit in the local's list, so on a union-against-union
+    # report the shop named second could land in our chair and the shop that
+    # won be recorded as the bidder. The agent says his own shop first.
+    def _said_at(name):
+        i = t.find(name.lower())
+        if i >= 0:
+            return i
+        first = name.lower().split()[0]
+        return next((t.find(w) for w in t.split() if w.strip(",.") == first), -1)
+
     named_sigs = [s for s in signatories
                   if s.lower() in t or s.lower().split()[0] in t.split()]
+    named_sigs.sort(key=lambda s: (_said_at(s) if _said_at(s) >= 0 else 10**6))
     ours = named_sigs[0] if named_sigs else None
     other = next((c for c in companies if c != ours), None)
     if other is None and len(named_sigs) > 1:
@@ -213,7 +227,42 @@ def decide(fields, conn):
        fields["winning_bid"] > fields["our_bid"] and fields.get("outcome") == "lost":
         return ("refused", "the reported winning bid is higher than ours on a job we lost. "
                            "One of the two numbers is wrong.")
+    _settle_sides(fields, conn)
     return ("accepted", "complete, and the contractor is on the signatory list")
+
+
+def _settle_sides(fields, conn):
+    """Which side of the funds the winner sits on. Rules, and exact match only.
+
+    This is the field page one counts on, and until Sept 22, 2026 nothing set
+    it: every row the gate wrote carried a null here and dropped straight out
+    of the denominator without a word. Hours are lost only when a shop that
+    pays nothing into the funds wins the job, so this field IS the loss.
+
+    Exact match, case and whitespace normalised, checked against both lists.
+    No similarity matching, not once, not behind a question mark. A name on
+    neither list is not on our side, and that is a statement, not a guess:
+    it is left null and the row is honest about not knowing.
+    """
+    def on_list(name, table):
+        if not name:
+            return False
+        return conn.execute(
+            f"SELECT 1 FROM {table} WHERE lower(trim(name))=?",
+            (name.strip().lower(),)).fetchone() is not None
+
+    if fields.get("outcome") == "won":
+        # the local does not bid. Our signatory won it, and he is on the list.
+        fields["winner"] = fields["our_signatory"]
+        fields["winner_union"] = 1
+        return
+    w = fields.get("winner")
+    if not w:
+        fields["winner_union"] = None
+    elif on_list(w, "signatories"):
+        fields["winner_union"] = 1      # union against union: hours stay in the hall
+    else:
+        fields["winner_union"] = 0      # the hours left the funds
 
 
 def gate(text, conn=None, write=True):

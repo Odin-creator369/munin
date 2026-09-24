@@ -107,11 +107,13 @@ no real job. Generated {datetime.datetime.now():%B %-d, %Y at %-I:%M %p}.</foote
 
 
 def p_blind_eye(conn):
-    be = munin.blind_eye(conn)
+    po = munin.page_one(conn)
+    be = po["free"]
     total = sum(b["gap"] for b in be)
     work_lost = sum(b["est_hours"] for b in be)
     hours_it_took = sum(b["hours_to_close"] for b in be)
-    lost = conn.execute("SELECT COUNT(*) c FROM bids WHERE outcome='lost' AND winning_bid IS NOT NULL").fetchone()["c"]
+    union_side = conn.execute("SELECT COUNT(*) c FROM bids WHERE outcome='lost' "
+                              "AND winning_bid IS NOT NULL AND winner_union=1").fetchone()["c"]
     rows = "".join(
         f"<tr><td class='n'>{esc(b['job_id'])}</td><td>{esc(b['project'])}</td>"
         f"<td>{esc(b['territory'])}</td><td>{esc(b['our_signatory'])}</td>"
@@ -122,13 +124,24 @@ def p_blind_eye(conn):
     body = f"""<section>
 <div class="stats">
 <div class="stat"><div class="k">Hours of work the members did not get</div>
-<div class="v gold">{work_lost:,.0f}</div><div class="n2">on {len(be)} jobs a waiver would have covered, of {lost} priced losses</div></div>
+<div class="v gold">{work_lost:,.0f}</div><div class="n2">on {len(be)} jobs a waiver would have covered</div></div>
 <div class="stat"><div class="k">Hours it would have taken to win them</div>
 <div class="v">{hours_it_took:,.0f}</div><div class="n2">of contributions, put at risk only on a win. No waiver was offered on any of them</div></div>
 <div class="stat"><div class="k">Hours of work won per hour of contributions waived</div>
 <div class="v">{(work_lost/hours_it_took) if hours_it_took else 0:,.1f}<span style="font-size:16px;color:var(--bone-dim)"> hrs</span></div>
 <div class="n2">{money(total)} between our numbers and theirs, in the contractors' currency</div></div>
 </div>
+<div class="card" style="margin-top:26px">
+<p class="quote">{esc(po['line'])}</p>
+<p class="sub" style="margin-top:12px">The count is printed first because the count is the honest
+figure. The share is the fragile one: a single reading of it at thirty jobs sits eight points
+wide, so it never appears on this page without the give-or-take beside it. A confident wrong
+percentage on page one kills a room exactly the way a confidently named contractor does.</p>
+<p class="sub" style="margin-top:10px">{union_side} further priced losses went to another
+signatory contractor and are deliberately <b>not</b> counted here. Hours are lost to this local
+only when a shop that pays nothing into the funds wins the job. When one signatory beats another
+the hours stay in the hall and the three funds are paid either way. The local does not bid; its
+signatory contractors do.</p></div>
 <p class="lede" style="margin-top:32px">Man hours are the currency a union runs on. A job recovery
 waiver is written in hours, not dollars, and it applies to the job, not to a contractor. The business manager waives a number of hours
 of contributions to the three funds, and every signatory bidding that job gets the same hours.
@@ -161,7 +174,7 @@ def p_roster(conn):
     unranked = "".join(
         f"<tr><td class='n'>—</td><td>{esc(r['contractor'])}</td><td class='n'>{r['bids']}</td>"
         f"<td class='n'>{r['wins']}</td><td class='n'>{r['losses']}</td>"
-        f"<td colspan='2' class='unres'>{esc(r['win_rate'].why)}</td></tr>"
+        f"<td colspan='2' class='unres'>{esc(str(r['win_rate'].why))}</td></tr>"
         for r in st["unranked"])
 
     def nrow(r):
@@ -169,11 +182,15 @@ def p_roster(conn):
         if isinstance(p, munin.Unresolved):
             return (f"<tr><td class='n'>{esc(r['job_id'])}</td><td>{esc(r['project'])}</td>"
                     f"<td>{esc(r['territory'])}</td><td class='n'>{money(r['our_bid'])}</td>"
-                    f"<td colspan='3' class='unres'>{esc(p.why)}</td></tr>")
-        cls = {"coverable":"t-ok","steep":"t-open","beyond the waiver":"t-refuse"}[p]
+                    f"<td colspan='4' class='unres'>{esc(p.why)}</td></tr>")
+        cls = {"coverable":"t-ok","near the line":"t-hold",
+               "beyond the waiver":"t-refuse"}[p]
         return (f"<tr><td class='n'>{esc(r['job_id'])}</td><td>{esc(r['project'])}</td>"
                 f"<td>{esc(r['territory'])}</td><td class='n'>{r['est_hours']:,.0f}</td>"
                 f"<td class='n'>{r['hours_to_close']:,.0f}</td>"
+                f"<td class='n'>{r['hours_low']:,.0f} to {r['hours_high']:,.0f}<br>"
+                f"<span style='color:var(--bone-dim);font-size:12px'>"
+                f"{r['share_low']*100:.0f} to {r['share_high']*100:.0f}% of the job</span></td>"
                 f"<td class='n'>{r['work_per_hour_waived']:,.1f}</td>"
                 f"<td><span class='tag {cls}'>{esc(p)}</span></td></tr>")
     order = nx["recommended"] + [r for r in nx["all"] if r not in nx["recommended"]]
@@ -190,11 +207,19 @@ def p_roster(conn):
 <p class="sub">Never split by territory and never by business agent. A contractor's book is
 his whole book. {st['priced_total']} priced bids are on file; the roster is not considered
 settled until {st['full_confidence_at']}.</p>
+<div class="card" style="margin:18px 0">
+<span class="tag {'t-ok' if st['resolved'] else 't-hold'}">{'Resolved' if st['resolved'] else 'Unresolved'}</span>
+<p class="quote" style="margin-top:14px">{esc(st['gate']['line'])}</p>
+<p class="sub" style="margin-top:10px">The gate counts priced bids per shop, not shops priced.
+Four shops must each carry {st['gate']['bids_per_shop']} priced bids before this page prints a
+single name. Measured, not assumed: the looser rule named a contractor to a business manager
+and was wrong about a third of the time at thirty rows.</p></div>
 <table><thead><tr><th class="n">#</th><th>Signatory contractor</th><th class="n">Bids</th>
 <th class="n">Won</th><th class="n">Lost</th><th class="n">Win rate</th>
 <th class="n">Median gap</th></tr></thead><tbody>{ranked}{unranked}</tbody></table>
-<p class="why">The three at the bottom are not ranked low. They are <span class="unres">not ranked</span>.
-Munin will not put a number beside a name it cannot stand behind.</p></section>
+<p class="why">{"Nobody on this page is ranked low. Nobody is <span class='unres'>ranked at all</span>, because the book is not deep enough yet to rank anyone honestly." if not st['resolved'] else "The shops with no number beside them are not ranked low. They are <span class='unres'>not ranked</span>."}
+Munin will not put a number beside a name it cannot stand behind. Silence with a distance on it
+is this page working. A name it cannot defend is this page lying.</p></section>
 
 <section><div class="eyebrow">Scorecard two</div>
 <h2>Did the job recovery fund get used, and did it work</h2>
@@ -218,8 +243,14 @@ per hour on which the funds forgo their contribution. Two different hours. The m
 is paid for every one of them; the funds collect on all but the waived ones. Probability, not
 possibility.</p>
 <table><thead><tr><th class="n">Job</th><th>Project</th><th>Territory</th>
-<th class="n">Hours of work</th><th class="n">Hours to close</th><th class="n">Work won per hour waived</th>
-<th>Verdict</th></tr></thead><tbody>{nxt}</tbody></table>
+<th class="n">Hours of work</th><th class="n">Hours to close</th><th class="n">Give or take</th>
+<th class="n">Work won per hour waived</th><th>Verdict</th></tr></thead><tbody>{nxt}</tbody></table>
+<p class="why">The verdict is only the line that survived measurement: winnable on a waiver, or
+not. How much of the job it eats is printed as a range, not as a word. Measured Sept 22, 2026:
+calling a job &ldquo;steep&rdquo; off a median was wrong 35.5% of the time on nine priced losses
+and was still wrong 19.3% of the time on sixty, because the quarter-of-the-job line sits right
+on top of where a local actually loses. The verdict underneath it was wrong 0.0% of the time
+from nine losses up. The threshold was never the problem. The word was, and it is gone.</p>
 <h2 style="margin-top:38px">Where the hours go first</h2>
 <p class="sub">This local has put {nx['budget_hours']:,.0f} hours of contributions at risk so far.
 Spent in this order, those same hours bring back {nx['plan_hours_of_work']:,.0f} hours of work.</p>

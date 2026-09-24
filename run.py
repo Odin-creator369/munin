@@ -79,11 +79,17 @@ def main():
     print(f"     with a rate that was not in effect that day.{R}")
 
     rule("4. THE BLIND EYE  page one")
-    be = munin.blind_eye(conn)
-    lost = conn.execute("SELECT COUNT(*) c FROM bids WHERE outcome='lost' "
-                        "AND winning_bid IS NOT NULL").fetchone()["c"]
-    print(f"   {B}{len(be)}{R} of {lost} priced losses would have been covered by a waiver.")
+    po = munin.page_one(conn)
+    be = po["free"]
+    print(f"   {B}{po['line']}{R}")
     print(f"   On every one of them, {B}no waiver was offered{R}.")
+    print(f"   {D}the count first, the share second, the give-or-take always. A single")
+    print(f"   reading of the share at thirty jobs sits eight points wide, so a bare")
+    print(f"   percentage on page one is the same lie as a confidently named shop.{R}")
+    union = conn.execute("SELECT COUNT(*) c FROM bids WHERE outcome='lost' "
+                         "AND winning_bid IS NOT NULL AND winner_union=1").fetchone()["c"]
+    print(f"   {D}{union} more priced losses went to another signatory and are not counted")
+    print(f"   here: the hours stayed in the hall and the funds were paid either way.{R}")
     print(f"   Total distance between our number and theirs: ${sum(b['gap'] for b in be):,.0f}")
     print(f"\n   closest three:")
     for b in be[:3]:
@@ -94,15 +100,19 @@ def main():
     st = munin.gungnir_standings(conn)
     print(f"   standings: {len(st['ranked'])} ranked, {G}{len(st['unranked'])} unresolved{R}"
           f"  {D}({st['priced_total']} priced bids of {st['full_confidence_at']}){R}")
-    for r in st["ranked"][:2]:
-        print(f"     top    {r['contractor']:<26} {r['win_rate']*100:5.1f}%  n={r['bids']}")
-    for r in st["ranked"][-1:]:
-        print(f"     bottom {r['contractor']:<26} {r['win_rate']*100:5.1f}%  n={r['bids']}")
-    print(f"\n   {E}designed failure 2{R}  a contractor with too thin a book")
-    for r in st["unranked"][:1]:
-        print(f"     {r['contractor']}: {G}{r['win_rate']}{R}")
-    print(f"     {D}not ranked low. Not ranked. Munin will not put a number beside a")
-    print(f"     name it cannot stand behind.{R}")
+    if st["resolved"]:
+        for r in st["ranked"][:2]:
+            print(f"     top    {r['contractor']:<26} {r['win_rate']*100:5.1f}%  n={r['bids']}")
+        for r in st["ranked"][-1:]:
+            print(f"     bottom {r['contractor']:<26} {r['win_rate']*100:5.1f}%  n={r['bids']}")
+    else:
+        print(f"     {G}{st['gate']['line']}{R}")
+    print(f"\n   {E}designed failure 2{R}  the roster gate, and it is holding")
+    print(f"     {G}no contractor is named on this run{R}")
+    print(f"     {D}the gate counts priced bids per shop, not shops priced: four shops")
+    print(f"     at {munin.MIN_BIDS_TO_RANK}+ priced bids each, or the page names nobody. The looser rule")
+    print(f"     named a contractor and was wrong about a third of the time at thirty")
+    print(f"     rows. Silence with a distance on it is the product working.{R}")
 
     rec = munin.gungnir_recovery(conn)
     print(f"\n   recovery fund: {rec['waived_jobs']} jobs waived, {rec['dry_jobs']} dry")
@@ -114,7 +124,8 @@ def main():
     print(f"\n   next winnable: {len(nx['recommended'])} of {len(nx['all'])} open jobs")
     for r in nx["recommended"][:2]:
         print(f"     {r['job_id']}  {r['territory']:<13} {r['hours_to_close']:>6,.0f} hrs "
-              f"({r['share_of_job']*100:.1f}% of the job)")
+              f"{D}give or take {r['hours_low']:,.0f} to {r['hours_high']:,.0f}, "
+              f"{r['share_low']*100:.0f} to {r['share_high']*100:.0f}% of the job{R}")
     print(f"\n   {E}designed failure 3{R}  a territory with too little history")
     for r in unres[:1]:
         print(f"     {r['job_id']} {r['territory']}: {G}{r['projection']}{R}")
